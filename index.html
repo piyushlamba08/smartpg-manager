@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SmartPG - Modern Hostel & Tenant Management</title>
+<meta name="description" content="Manage PG tenants, track monthly rent, record partial and advance payments, generate rent receipts, and monitor occupancy.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --primary-light: #e0e7ff;
+    --success: #10b981;
+    --success-light: #d1fae5;
+    --danger: #ef4444;
+    --danger-light: #fee2e2;
+    --warning: #f59e0b;
+    --warning-light: #fef3c7;
+    --info: #0284c7;
+    --info-light: #e0f2fe;
+    --purple: #8b5cf6;
+    --purple-light: #ede9fe;
+    --bg-page: #f8fafc;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05);
+    --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0 12px 28px rgba(15, 23, 42, 0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+  body { background: var(--bg-page); color: var(--text-main); min-height: 100vh; padding-bottom: 50px; }
+
+  /* Top Navigation */
+  header {
+    background: #0f172a;
+    color: #fff;
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-logo {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, #6366f1, #3b82f6);
+    display: flex; align-items: center; justify-content: center;
+    border-radius: var(--radius-sm); font-size: 20px; font-weight: 700;
+  }
+  .brand-info h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; color: #fff; }
+  .brand-info span { font-size: 0.75rem; color: #94a3b8; }
+  .header-actions { display: flex; align-items: center; gap: 12px; }
+
+  /* Main Container */
+  .container { max-width: 1200px; margin: 24px auto; padding: 0 20px; }
+
+  /* Month Bar */
+  .filter-bar {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+    margin-bottom: 20px; background: var(--surface); padding: 14px 18px;
+    border-radius: var(--radius-md); border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+  }
+  .filter-group { display: flex; align-items: center; gap: 10px; }
+  .filter-group label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
+
+  /* Dashboard Stats Grid */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--surface); padding: 20px; border-radius: var(--radius-md);
+    border: 1px solid var(--border); box-shadow: var(--shadow-sm); position: relative;
+    overflow: hidden; transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--primary); }
+  .stat-card.card-green::before { background: var(--success); }
+  .stat-card.card-red::before { background: var(--danger); }
+  .stat-card.card-amber::before { background: var(--warning); }
+  .stat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .stat-title { font-size: 0.82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-icon { font-size: 1.25rem; width: 36px; height: 36px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; background: #f1f5f9; }
+  .stat-value { font-size: 1.75rem; font-weight: 800; color: var(--text-main); }
+  .stat-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+
+  /* Navigation Tabs */
+  .tabs-nav { display: flex; gap: 8px; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+  .tab-btn {
+    padding: 12px 20px; background: none; border: none; font-size: 0.95rem; font-weight: 600;
+    color: var(--text-muted); cursor: pointer; position: relative; border-bottom: 2px solid transparent;
+    margin-bottom: -2px; transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+  }
+  .tab-btn:hover { color: var(--primary); }
+  .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  /* Panels */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeIn 0.25s ease-in-out; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Content Cards */
+  .panel-card { background: var(--surface); border-radius: var(--radius-md); border: 1px solid var(--border); box-shadow: var(--shadow-sm); overflow: hidden; }
+  .panel-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; border-bottom: 1px solid var(--border); background: #fafbfc; }
+
+  /* Search & Controls */
+  .search-box { position: relative; flex: 1; min-width: 240px; }
+  .search-box input {
+    width: 100%; padding: 10px 14px 10px 36px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 0.9rem; outline: none; transition: border-color 0.2s;
+  }
+  .search-box input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+  .search-box span { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.9rem; }
+
+  .pill-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pill-btn {
+    padding: 6px 14px; font-size: 0.8rem; font-weight: 600; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text-muted);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .pill-btn.active, .pill-btn:hover { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+  /* Modern Table */
+  .table-responsive { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; text-align: left; }
+  th { padding: 12px 18px; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); background: #f8fafc; border-bottom: 1px solid var(--border); }
+  td { padding: 14px 18px; font-size: 0.9rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:hover td { background: #fbfcfe; }
+
+  /* Tenant Avatar & Info */
+  .tenant-cell { display: flex; align-items: center; gap: 12px; }
+  .avatar {
+    width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #4f46e5, #06b6d4);
+    color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
+  }
+  .tenant-meta .name { font-weight: 600; color: var(--text-main); }
+  .tenant-meta .phone { font-size: 0.78rem; color: var(--text-muted); }
+  .tenant-meta .phone a { color: inherit; text-decoration: none; }
+  .tenant-meta .phone a:hover { color: var(--primary); }
+
+  /* Badges */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 0.75rem; font-weight: 700; border-radius: 999px; }
+  .badge-paid { background: var(--success-light); color: #065f46; }
+  .badge-partial { background: var(--warning-light); color: #92400e; border: 1px solid #fde68a; }
+  .badge-pending { background: var(--danger-light); color: #991b1b; }
+  .badge-advance { background: var(--purple-light); color: #5b21b6; }
+  .badge-room { background: #f1f5f9; color: #334155; font-weight: 600; border-radius: var(--radius-sm); }
+  .badge-mode { background: var(--info-light); color: #0369a1; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px;
+    font-size: 0.85rem; font-weight: 600; border-radius: var(--radius-sm); border: none; cursor: pointer;
+    transition: all 0.2s; text-decoration: none;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover { background: #059669; }
+  .btn-secondary { background: #f1f5f9; color: #334155; }
+  .btn-secondary:hover { background: #e2e8f0; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { background: #dc2626; }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+  .btn-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
+  .btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+  .action-group { display: flex; align-items: center; gap: 6px; }
+
+  /* Rent Tracker Grid */
+  .tracker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; padding: 20px; }
+  .tracker-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: 16px; box-shadow: var(--shadow-sm); position: relative; transition: all 0.2s;
+  }
+  .tracker-card.is-paid { border-left: 4px solid var(--success); }
+  .tracker-card.is-partial { border-left: 4px solid var(--warning); background: #fffdfa; }
+  .tracker-card.is-pending { border-left: 4px solid var(--danger); background: #fffcfc; }
+  .tracker-card.is-advance { border-left: 4px solid var(--purple); background: #fcfaff; }
+  .tracker-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .tracker-info .t-name { font-weight: 700; font-size: 1rem; color: var(--text-main); }
+  .tracker-info .t-room { font-size: 0.8rem; color: var(--text-muted); }
+  .tracker-body {
+    display: flex; justify-content: space-between; align-items: center; padding: 12px 0;
+    border-top: 1px dashed var(--border); border-bottom: 1px dashed var(--border); margin-bottom: 12px;
+  }
+  .rent-fig { font-size: 1.25rem; font-weight: 800; color: var(--text-main); }
+
+  /* Modals */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center;
+    z-index: 999; padding: 12px;
+  }
+  .modal-overlay.active { display: flex; animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+  @keyframes modalPop { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+  .modal-box {
+    background: var(--surface); border-radius: var(--radius-md); width: 100%; max-width: 500px;
+    box-shadow: var(--shadow-lg); overflow: hidden; max-height: 94vh; display: flex; flex-direction: column;
+  }
+  .modal-header {
+    padding: 10px 16px; background: #fafbfc; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+  }
+  .modal-header h3 { font-size: 1rem; font-weight: 700; color: var(--text-main); }
+  .close-btn { background: none; border: none; font-size: 1.4rem; color: var(--text-muted); cursor: pointer; line-height: 1; padding: 2px 6px; }
+  .close-btn:hover { color: var(--danger); }
+  .modal-body { padding: 12px 16px; overflow-y: auto; flex: 1; }
+  .modal-footer {
+    padding: 10px 16px; background: #fafbfc; border-top: 1px solid var(--border);
+    display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+
+  /* Forms */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group.full { grid-column: span 2; }
+  .form-group label { font-size: 0.78rem; font-weight: 600; color: var(--text-main); }
+  .form-group input, .form-group select, .form-group textarea {
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.85rem; outline: none;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+
+  /* Printable Receipt Styles (Compact & Fits Default Screen) */
+  .receipt-container {
+    background: #fff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 14px 18px;
+    color: #1e293b; position: relative; max-width: 440px; margin: 0 auto; font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .receipt-watermark {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-25deg);
+    font-size: 3rem; font-weight: 900; color: rgba(16, 185, 129, 0.08); pointer-events: none; letter-spacing: 0.1em; user-select: none;
+  }
+  .receipt-top { text-align: center; border-bottom: 1.5px dashed #94a3b8; padding-bottom: 6px; margin-bottom: 8px; }
+  .receipt-top h2 { font-size: 1.15rem; font-weight: 800; color: #0f172a; letter-spacing: -0.01em; margin-bottom: 2px; }
+  .receipt-top p { font-size: 0.72rem; color: #64748b; margin-top: 1px; }
+  .receipt-meta-grid { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.76rem; }
+  .receipt-details-table { width: 100%; margin-bottom: 8px; border-collapse: collapse; }
+  .receipt-details-table td { padding: 4px 7px; border: 1px solid #e2e8f0; font-size: 0.78rem; line-height: 1.3; }
+  .receipt-details-table td.lbl { background: #f8fafc; font-weight: 600; width: 38%; color: #475569; }
+  .receipt-details-table td.val { font-weight: 600; color: #0f172a; }
+  .receipt-amount-box {
+    background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 6px 12px;
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+  }
+  .receipt-amount-box .amt-text { font-size: 0.68rem; font-weight: 700; color: #166534; }
+  .receipt-amount-box .amt-num { font-size: 1.18rem; font-weight: 800; color: #15803d; }
+  
+  .balance-callout {
+    padding: 6px 10px; border-radius: 6px; font-size: 0.73rem; font-weight: 600; margin-bottom: 8px; line-height: 1.35;
+  }
+  .balance-callout.due { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+  .balance-callout.cleared { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+  .balance-callout.advance { background: #f5f3ff; border: 1px solid #ddd6fe; color: #5b21b6; }
+
+  .receipt-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 8px; padding-top: 6px; }
+  .receipt-sign { text-align: center; border-top: 1px solid #475569; padding-top: 2px; min-width: 120px; font-size: 0.68rem; font-weight: 600; color: #475569; }
+
+  /* Toast Notification */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px; background: #0f172a; color: #fff; padding: 12px 20px;
+    border-radius: var(--radius-sm); box-shadow: var(--shadow-lg); font-size: 0.88rem; font-weight: 600;
+    display: none; align-items: center; gap: 8px; z-index: 1000; animation: toastSlide 0.25s ease-out;
+  }
+  #toast.success { background: #065f46; }
+  #toast.error { background: #991b1b; }
+  @keyframes toastSlide { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  /* Print Media Query */
+  @media print {
+    body * { visibility: hidden; }
+    #printableReceipt, #printableReceipt * { visibility: visible; }
+    #receiptModal {
+      position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: none !important;
+      display: block !important; padding: 0 !important;
+    }
+    .modal-box { max-width: 100% !important; box-shadow: none !important; border: none !important; }
+    .modal-header, .modal-footer { display: none !important; }
+    .modal-body { padding: 0 !important; }
+    .receipt-container { border: 1px solid #000 !important; box-shadow: none !important; width: 100% !important; max-width: 100% !important; }
+  }
+
+  @media (max-width: 768px) {
+    header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .header-actions { width: 100%; justify-content: space-between; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-group.full { grid-column: span 1; }
+    .stats-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP HEADER -->
+<header>
+  <div class="brand">
+    <div class="brand-logo">🏢</div>
+    <div class="brand-info">
+      <h1>SmartPG Manager</h1>
+      <span>Smart Rental & Partial Payment Management</span>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-primary" id="btnOpenAddTenant" onclick="openTenantModal()">
+      <span>➕</span> Add Tenant
+    </button>
+    <button class="btn btn-success" id="btnOpenAddPayment" onclick="openPaymentModal()">
+      <span>₹</span> Record Payment
+    </button>
+  </div>
+</header>
+
+<!-- MAIN CONTAINER -->
+<div class="container">
+
+  <!-- MONTH SELECTION & QUICK STATS BAR -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label for="monthFilter">📅 Billing Month:</label>
+      <input type="month" id="monthFilter" class="btn-outline" style="padding: 6px 10px; border-radius: 6px;" onchange="onMonthChange()">
+      <button class="btn btn-secondary btn-sm" onclick="setCurrentMonth()">Current Month</button>
+    </div>
+    <div style="font-size: 0.85rem; color: var(--text-muted);" id="lastSyncText">
+      Synced with flat-file database
+    </div>
+  </div>
+
+  <!-- DASHBOARD ANALYTICS CARDS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-header">
+        <span class="stat-title">Total Tenants</span>
+        <div class="stat-icon">👥</div>
+      </div>
+      <div class="stat-value" id="statTotalTenants">0</div>
+      <div class="stat-sub">
+        <span id="statOccupiedRooms">0</span> rooms currently occupied
+      </div>
+    </div>
+
+    <div class="stat-card card-amber">
+      <div class="stat-header">
+        <span class="stat-title">Expected Rent</span>
+        <div class="stat-icon">💰</div>
+      </div>
+      <div class="stat-value" id="statExpectedRent">₹0</div>
+      <div class="stat-sub">Total monthly revenue target</div>
+    </div>
+
+    <div class="stat-card card-green">
+      <div class="stat-header">
+        <span class="stat-title">Collected Rent</span>
+        <div class="stat-icon">✅</div>
+      </div>
+      <div class="stat-value" id="statCollectedRent">₹0</div>
+      <div class="stat-sub">
+        <strong id="statPaidBreakdown" style="color:var(--success)">0</strong>
+      </div>
+    </div>
+
+    <div class="stat-card card-red">
+      <div class="stat-header">
+        <span class="stat-title">Pending Rent Balance</span>
+        <div class="stat-icon">⏳</div>
+      </div>
+      <div class="stat-value" id="statPendingRent">₹0</div>
+      <div class="stat-sub">
+        <strong id="statPendingBreakdown" style="color:var(--danger)">0</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVIGATION TABS -->
+  <div class="tabs-nav">
+    <button class="tab-btn active" id="tabTenantsBtn" onclick="switchTab('tenants')">
+      👥 Tenants Directory
+    </button>
+    <button class="tab-btn" id="tabHistoryBtn" onclick="switchTab('history')">
+      📜 Payment History & Receipts
+    </button>
+    <button class="tab-btn" id="tabTrackerBtn" onclick="switchTab('tracker')">
+      📊 Month-wise Rent Tracker
+    </button>
+  </div>
+
+  <!-- TAB 1: TENANTS DIRECTORY -->
+  <div class="tab-panel active" id="panelTenants">
+    <div class="panel-card">
+      <div class="panel-header">
+        <div class="search-box">
+          <span>🔍</span>
+          <input type="text" id="tenantSearch" placeholder="Search by name, room, or phone..." oninput="renderTenants()">
+        </div>
+        <div class="pill-filters">
+          <button class="pill-btn active" onclick="setTenantFilter('all', this)">All</button>
+          <button class="pill-btn" onclick="setTenantFilter('PAID', this)">Paid in Full</button>
+          <button class="pill-btn" onclick="setTenantFilter('PARTIAL', this)">Partial (Due)</button>
+          <button class="pill-btn" onclick="setTenantFilter('UNPAID', this)">Unpaid</button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Tenant Info</th>
+              <th>Room No</th>
+              <th>Monthly Rent</th>
+              <th>Status for <span class="currentMonthSpan"></span></th>
+              <th>Due Balance</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tenantsTbody">
+            <tr><td colspan="6" style="text-align:center; padding: 24px;">Loading tenants...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: PAYMENT HISTORY & RECEIPTS -->
+  <div class="tab-panel" id="panelHistory">
+    <div class="panel-card">
+      <div class="panel-header">
+        <div class="search-box">
+          <span>🔍</span>
+          <input type="text" id="historySearch" placeholder="Search by tenant name, receipt no..." oninput="renderPayments()">
+        </div>
+        <div class="filter-group">
+          <label style="font-size:0.8rem; font-weight:600;">Filter Month:</label>
+          <input type="month" id="historyMonthFilter" style="padding: 6px 10px; border-radius: 6px; border:1px solid var(--border);" onchange="renderPayments()">
+          <button class="btn btn-secondary btn-sm" onclick="clearHistoryMonthFilter()">Show All</button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Receipt No</th>
+              <th>Tenant & Room</th>
+              <th>Billing Month</th>
+              <th>Paid Amount</th>
+              <th>Payment Date</th>
+              <th>Mode</th>
+              <th>Type / Balance</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="paymentsTbody">
+            <tr><td colspan="8" style="text-align:center; padding: 24px;">Loading payment history...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: MONTH-WISE RENT TRACKER -->
+  <div class="tab-panel" id="panelTracker">
+    <div class="panel-card">
+      <div class="panel-header">
+        <div>
+          <h3 style="font-size: 1rem; font-weight: 700;">Rent Collection Matrix</h3>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Overview for month: <strong id="trackerMonthLabel"></strong></span>
+        </div>
+        <div class="filter-group">
+          <button class="btn btn-outline btn-sm" onclick="refreshAll()">🔄 Refresh Data</button>
+        </div>
+      </div>
+      <div class="tracker-grid" id="trackerGrid">
+        <!-- Generated Dynamically -->
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL: ADD / EDIT TENANT -->
+<div class="modal-overlay" id="tenantModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="tenantModalTitle">Add New Tenant</h3>
+      <button class="close-btn" onclick="closeTenantModal()">&times;</button>
+    </div>
+    <form id="tenantForm" onsubmit="handleTenantSubmit(event)">
+      <div class="modal-body">
+        <input type="hidden" id="tenantId">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label for="tName">Full Name *</label>
+            <input type="text" id="tName" required placeholder="e.g. Piyush Sharma">
+          </div>
+          <div class="form-group">
+            <label for="tPhone">Phone Number</label>
+            <input type="tel" id="tPhone" placeholder="e.g. 9876543210">
+          </div>
+          <div class="form-group">
+            <label for="tRoom">Room No *</label>
+            <input type="text" id="tRoom" required placeholder="e.g. 101, B-2">
+          </div>
+          <div class="form-group">
+            <label for="tRent">Monthly Rent (₹) *</label>
+            <input type="number" id="tRent" required placeholder="e.g. 1800" min="0">
+          </div>
+          <div class="form-group full">
+            <label for="tJoinDate">Joining Date</label>
+            <input type="date" id="tJoinDate">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeTenantModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="btnSaveTenant">Save Tenant</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: RECORD PAYMENT (SUPPORTS PARTIAL & ADVANCE) -->
+<div class="modal-overlay" id="paymentModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Record Rent Payment</h3>
+      <button class="close-btn" onclick="closePaymentModal()">&times;</button>
+    </div>
+    <form id="paymentForm" onsubmit="handlePaymentSubmit(event)">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label for="payTenantSelect">Select Tenant *</label>
+            <select id="payTenantSelect" required onchange="onPaymentTenantChange()">
+              <option value="">-- Choose Tenant --</option>
+            </select>
+          </div>
+
+          <!-- Dynamic Tenant Financial Snapshot -->
+          <div class="form-group full" id="paySummaryBox" style="display:none; background:#f8fafc; border:1px solid var(--border); padding:10px 14px; border-radius:var(--radius-sm); font-size:0.83rem;">
+            <!-- Dynamically populated -->
+          </div>
+
+          <div class="form-group">
+            <label for="payMonth">Billing Month *</label>
+            <input type="month" id="payMonth" required onchange="onPaymentTenantChange()">
+          </div>
+          <div class="form-group">
+            <label for="payAmount">Amount Paid Now (₹) *</label>
+            <input type="number" id="payAmount" required min="1" placeholder="e.g. 1000">
+          </div>
+          <div class="form-group">
+            <label for="payDate">Payment Date *</label>
+            <input type="date" id="payDate" required>
+          </div>
+          <div class="form-group">
+            <label for="payMode">Payment Mode *</label>
+            <select id="payMode">
+              <option value="UPI">UPI (GPay / PhonePe / Paytm)</option>
+              <option value="Cash">Cash</option>
+              <option value="Bank Transfer">Bank Transfer (NEFT/IMPS)</option>
+              <option value="Cheque">Cheque</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label for="payNote">Reference / Remarks</label>
+            <input type="text" id="payNote" placeholder="e.g. 1st installment or GPay Ref: 4210...">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closePaymentModal()">Cancel</button>
+        <button type="submit" class="btn btn-success" id="btnSavePayment">Confirm & Generate Receipt</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: PRINTABLE RECEIPT -->
+<div class="modal-overlay" id="receiptModal">
+  <div class="modal-box" style="max-width: 480px;">
+    <div class="modal-header">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:1.1rem;">🧾</span>
+        <h3 style="margin:0; font-size:0.95rem;">Rent Payment Receipt</h3>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button type="button" class="btn btn-primary btn-sm" onclick="printReceipt()" style="font-size:0.75rem; padding:4px 9px;">
+          📥 Download PDF
+        </button>
+        <button class="close-btn" onclick="closeReceiptModal()" title="Close">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body" style="background:#f8fafc; padding: 10px 14px;">
+      
+      <!-- RECEIPT CONTAINER -->
+      <div class="receipt-container" id="printableReceipt">
+        <div class="receipt-watermark" id="recWatermark">PAID</div>
+        
+        <div class="receipt-top">
+          <h2>SHREE PG & RESIDENCY</h2>
+          <p>Official Rent Acknowledgement Receipt</p>
+        </div>
+
+        <div class="receipt-meta-grid">
+          <div>
+            <strong>Receipt No:</strong> <span id="recNo">RCP-0000</span>
+          </div>
+          <div>
+            <strong>Issue Date:</strong> <span id="recDate">YYYY-MM-DD</span>
+          </div>
+        </div>
+
+        <table class="receipt-details-table">
+          <tr>
+            <td class="lbl">Received From</td>
+            <td class="val" id="recTenantName">-</td>
+          </tr>
+          <tr>
+            <td class="lbl">Room Number</td>
+            <td class="val" id="recRoom">-</td>
+          </tr>
+          <tr>
+            <td class="lbl">Phone Number</td>
+            <td class="val" id="recPhone">-</td>
+          </tr>
+          <tr>
+            <td class="lbl">Billing Period</td>
+            <td class="val" id="recMonth">-</td>
+          </tr>
+          <tr>
+            <td class="lbl">Total Monthly Rent</td>
+            <td class="val" id="recRentFig">-</td>
+          </tr>
+          <tr>
+            <td class="lbl">Payment Method</td>
+            <td class="val" id="recMode">UPI</td>
+          </tr>
+          <tr>
+            <td class="lbl">Remarks / Note</td>
+            <td class="val" id="recNote">-</td>
+          </tr>
+        </table>
+
+        <!-- Amount Paid Highlight -->
+        <div class="receipt-amount-box">
+          <div>
+            <div class="amt-text">AMOUNT RECEIVED THIS TRANSACTION</div>
+            <div id="recAmountWords" style="font-size:0.75rem; color:#166534; font-weight:600;">-</div>
+          </div>
+          <div class="amt-num" id="recAmount">₹0</div>
+        </div>
+
+        <!-- Balance Callout on Receipt -->
+        <div id="recBalanceBox" class="balance-callout cleared">
+          <!-- Dynamically populated: e.g. Due ₹800 remaining, or Rent Cleared, or Advance ₹100 -->
+        </div>
+
+        <div class="receipt-footer">
+          <div style="font-size:0.68rem; color:#64748b; max-width:62%; line-height:1.2;">
+            * Computer generated official receipt. Thank you for prompt payment!
+          </div>
+          <div class="receipt-sign">
+            Authorized Signatory<br>
+            <span style="font-size:0.65rem; color:#94a3b8;">PG Management</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="closeReceiptModal()">✕ Close</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="downloadTextSlip()">💾 Download Slip (.txt)</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="printReceipt()">📥 Download / Save PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- FLOATING TOAST -->
+<div id="toast">Message</div>
+
+<!-- SCRIPT -->
+<script>
+const API_BASE = 'api.php';
+const API_KEY = 'pg123secret';
+
+let tenants = [];
+let payments = [];
+let currentMonth = new Date().toISOString().slice(0, 7);
+let tenantStatusFilter = 'all';
+
+// --- API Helper ---
+async function apiCall(endpoint, method = 'GET', body = null) {
+  const url = `${API_BASE}${endpoint.includes('?') ? endpoint : '?' + endpoint}`;
+  const options = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-KEY': API_KEY
+    }
+  };
+  if (body) options.body = JSON.stringify(body);
+
+  const res = await fetch(url, options);
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Server request failed');
+  }
+  return data;
+}
+
+// --- Toast notification ---
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = type;
+  t.style.display = 'flex';
+  setTimeout(() => { t.style.display = 'none'; }, 3200);
+}
+
+// --- Number to Words Converter (INR) ---
+function numberToWordsINR(num) {
+  const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+             'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  
+  num = parseInt(num);
+  if (isNaN(num) || num === 0) return 'Zero Rupees Only';
+
+  function convertGroup(n) {
+    let str = '';
+    if (n >= 100) { str += a[Math.floor(n / 100)] + ' Hundred '; n %= 100; }
+    if (n >= 20) { str += b[Math.floor(n / 10)] + ' '; n %= 10; }
+    if (n > 0) { str += a[n] + ' '; }
+    return str;
+  }
+
+  let words = '';
+  const crore = Math.floor(num / 10000000); num %= 10000000;
+  const lakh = Math.floor(num / 100000); num %= 100000;
+  const thousand = Math.floor(num / 1000); num %= 1000;
+  const remainder = num;
+
+  if (crore > 0) words += convertGroup(crore) + 'Crore ';
+  if (lakh > 0) words += convertGroup(lakh) + 'Lakh ';
+  if (thousand > 0) words += convertGroup(thousand) + 'Thousand ';
+  if (remainder > 0) words += convertGroup(remainder);
+
+  return words.trim() + ' Rupees Only';
+}
+
+function esc(s) {
+  if (s === null || s === undefined) return '';
+  const d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
+}
+
+function formatMonthName(monthStr) {
+  if (!monthStr) return '';
+  const [y, m] = monthStr.split('-');
+  const date = new Date(parseInt(y), parseInt(m) - 1, 1);
+  return date.toLocaleString('default', { month: 'long', year: 'numeric' });
+}
+
+// --- Dynamic Balance Calculator for Tenant & Month ---
+function getTenantMonthFinances(tenantId, month = currentMonth) {
+  const t = tenants.find(x => x.id === tenantId);
+  const rent = t ? (parseInt(t.rent) || 0) : 0;
+  
+  // Sum of all payments for this tenant in this month
+  const tenantMonthPayments = payments.filter(p => p.tenant_id === tenantId && p.month === month);
+  const totalPaid = tenantMonthPayments.reduce((sum, p) => sum + (parseInt(p.amount) || 0), 0);
+  
+  let status = 'UNPAID';
+  let due = rent;
+  let advance = 0;
+
+  if (totalPaid === 0) {
+    status = 'UNPAID';
+    due = rent;
+  } else if (totalPaid < rent) {
+    status = 'PARTIAL';
+    due = rent - totalPaid;
+  } else if (totalPaid === rent) {
+    status = 'PAID';
+    due = 0;
+  } else {
+    status = 'ADVANCE';
+    due = 0;
+    advance = totalPaid - rent;
+  }
+
+  return { rent, totalPaid, due, advance, status, paymentCount: tenantMonthPayments.length };
+}
+
+// --- Tab Switching ---
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+  if (tabId === 'tenants') {
+    document.getElementById('tabTenantsBtn').classList.add('active');
+    document.getElementById('panelTenants').classList.add('active');
+  } else if (tabId === 'history') {
+    document.getElementById('tabHistoryBtn').classList.add('active');
+    document.getElementById('panelHistory').classList.add('active');
+  } else if (tabId === 'tracker') {
+    document.getElementById('tabTrackerBtn').classList.add('active');
+    document.getElementById('panelTracker').classList.add('active');
+  }
+}
+
+// --- Month control ---
+function setCurrentMonth() {
+  currentMonth = new Date().toISOString().slice(0, 7);
+  document.getElementById('monthFilter').value = currentMonth;
+  onMonthChange();
+}
+
+function onMonthChange() {
+  currentMonth = document.getElementById('monthFilter').value || new Date().toISOString().slice(0, 7);
+  document.getElementById('trackerMonthLabel').textContent = formatMonthName(currentMonth);
+  document.querySelectorAll('.currentMonthSpan').forEach(el => el.textContent = formatMonthName(currentMonth));
+  loadStats();
+  renderTenants();
+  renderTracker();
+}
+
+// --- Refresh all ---
+async function refreshAll() {
+  try {
+    await Promise.all([loadTenants(), loadPayments(), loadStats()]);
+    document.getElementById('lastSyncText').textContent = 'Synced at ' + new Date().toLocaleTimeString();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function loadTenants() {
+  tenants = await apiCall('resource=tenants');
+  renderTenants();
+  populatePaymentTenantDropdown();
+  renderTracker();
+}
+
+async function loadPayments() {
+  payments = await apiCall('resource=payments');
+  renderPayments();
+  renderTenants();
+  renderTracker();
+}
+
+async function loadStats() {
+  try {
+    const stats = await apiCall(`resource=stats&month=${currentMonth}`);
+    document.getElementById('statTotalTenants').textContent = stats.total_tenants;
+    document.getElementById('statOccupiedRooms').textContent = stats.occupied_rooms;
+    document.getElementById('statExpectedRent').textContent = '₹' + stats.expected_rent.toLocaleString('en-IN');
+    document.getElementById('statCollectedRent').textContent = '₹' + stats.collected_rent.toLocaleString('en-IN');
+    document.getElementById('statPendingRent').textContent = '₹' + stats.pending_rent.toLocaleString('en-IN');
+    
+    document.getElementById('statPaidBreakdown').textContent = 
+      `${stats.fully_paid_count} Full paid` + (stats.partial_count > 0 ? ` + ${stats.partial_count} Partial` : '');
+    document.getElementById('statPendingBreakdown').textContent = 
+      `${stats.unpaid_count} Unpaid` + (stats.partial_count > 0 ? ` + ${stats.partial_count} with balance` : '');
+  } catch (e) {
+    console.error('Stats loading error', e);
+  }
+}
+
+// --- Tenants Directory ---
+function setTenantFilter(status, btn) {
+  tenantStatusFilter = status;
+  document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTenants();
+}
+
+function renderTenants() {
+  const query = document.getElementById('tenantSearch').value.toLowerCase();
+  const tbody = document.getElementById('tenantsTbody');
+
+  const filtered = tenants.filter(t => {
+    const matchesSearch = t.name.toLowerCase().includes(query) ||
+                          (t.room && t.room.toLowerCase().includes(query)) ||
+                          (t.phone && t.phone.toLowerCase().includes(query));
+    if (!matchesSearch) return false;
+
+    const fin = getTenantMonthFinances(t.id, currentMonth);
+    if (tenantStatusFilter === 'all') return true;
+    return fin.status === tenantStatusFilter;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 24px; color: var(--text-muted);">No tenants found matching your filter</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(t => {
+    const initial = t.name ? t.name.trim().charAt(0).toUpperCase() : 'T';
+    const fin = getTenantMonthFinances(t.id, currentMonth);
+
+    let statusBadge = '';
+    let dueCol = '';
+
+    if (fin.status === 'PAID') {
+      statusBadge = `<span class="badge badge-paid">✅ Paid (₹${fin.totalPaid})</span>`;
+      dueCol = `<span style="color:var(--success); font-weight:600;">₹0 (Cleared)</span>`;
+    } else if (fin.status === 'PARTIAL') {
+      statusBadge = `<span class="badge badge-partial">⚠️ Partial: Paid ₹${fin.totalPaid}</span>`;
+      dueCol = `<strong style="color:var(--warning); font-size:0.95rem;">₹${fin.due} Due</strong>`;
+    } else if (fin.status === 'ADVANCE') {
+      statusBadge = `<span class="badge badge-advance">🌟 Advance: Paid ₹${fin.totalPaid}</span>`;
+      dueCol = `<span style="color:var(--purple); font-weight:600;">+₹${fin.advance} (Credit)</span>`;
+    } else {
+      statusBadge = `<span class="badge badge-pending">⏳ Unpaid</span>`;
+      dueCol = `<strong style="color:var(--danger); font-size:0.95rem;">₹${fin.due} Due</strong>`;
+    }
+
+    return `
+      <tr>
+        <td>
+          <div class="tenant-cell">
+            <div class="avatar">${initial}</div>
+            <div class="tenant-meta">
+              <div class="name">${esc(t.name)}</div>
+              <div class="phone">
+                ${t.phone ? `<a href="tel:${esc(t.phone)}">📞 ${esc(t.phone)}</a>` : '<span style="color:#94a3b8">No phone</span>'}
+              </div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <span class="badge badge-room">Room ${esc(t.room)}</span>
+        </td>
+        <td>
+          <strong style="color:var(--text-main); font-size:1rem;">₹${Number(t.rent).toLocaleString('en-IN')}</strong>
+          <span style="font-size:0.75rem; color:var(--text-muted);">/mo</span>
+        </td>
+        <td>${statusBadge}</td>
+        <td>${dueCol}</td>
+        <td>
+          <div class="action-group">
+            <button class="btn btn-success btn-sm" onclick="openPaymentForTenant(${t.id})" title="Collect Rent / Installment">
+              ₹ Pay
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="editTenant(${t.id})" title="Edit Details">
+              ✏️
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="deleteTenant(${t.id})" title="Delete Tenant" style="color:var(--danger)">
+              🗑️
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// --- Payments History ---
+function clearHistoryMonthFilter() {
+  document.getElementById('historyMonthFilter').value = '';
+  renderPayments();
+}
+
+function renderPayments() {
+  const query = document.getElementById('historySearch').value.toLowerCase();
+  const filterMonth = document.getElementById('historyMonthFilter').value;
+  const tbody = document.getElementById('paymentsTbody');
+
+  const filtered = payments.filter(p => {
+    const matchesSearch = (p.tenant_name && p.tenant_name.toLowerCase().includes(query)) ||
+                          (p.receipt_no && p.receipt_no.toLowerCase().includes(query)) ||
+                          (p.room && p.room.toLowerCase().includes(query));
+    if (!matchesSearch) return false;
+    if (filterMonth && p.month !== filterMonth) return false;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 24px; color: var(--text-muted);">No payment records found</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(p => {
+    let typeBadge = '';
+    if (p.balance > 0) {
+      typeBadge = `<span class="badge badge-partial">Partial (Due: ₹${p.balance})</span>`;
+    } else if (p.advance > 0) {
+      typeBadge = `<span class="badge badge-advance">Advance (+₹${p.advance})</span>`;
+    } else {
+      typeBadge = `<span class="badge badge-paid">Full Paid</span>`;
+    }
+
+    return `
+      <tr>
+        <td>
+          <span class="badge badge-room" style="font-weight:700; color:var(--primary);">${esc(p.receipt_no || ('RCP-' + p.id))}</span>
+        </td>
+        <td>
+          <div style="font-weight:600;">${esc(p.tenant_name)}</div>
+          <div style="font-size:0.75rem; color:var(--text-muted);">Room: ${esc(p.room)}</div>
+        </td>
+        <td>
+          <strong>${formatMonthName(p.month)}</strong>
+        </td>
+        <td>
+          <strong style="color:var(--success); font-size:1rem;">₹${Number(p.amount).toLocaleString('en-IN')}</strong>
+        </td>
+        <td style="font-size:0.85rem; color:var(--text-muted);">${esc(p.date)}</td>
+        <td><span class="badge badge-mode">${esc(p.mode || 'UPI')}</span></td>
+        <td>${typeBadge}</td>
+        <td>
+          <div class="action-group">
+            <button class="btn btn-primary btn-sm" onclick="viewReceipt(${p.id})">
+              🖨️ Receipt
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="deletePayment(${p.id})" title="Delete Payment" style="color:var(--danger)">
+              🗑️
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// --- Rent Tracker Grid ---
+function renderTracker() {
+  const container = document.getElementById('trackerGrid');
+  if (tenants.length === 0) {
+    container.innerHTML = `<p style="padding:20px; color:var(--text-muted);">No tenants available. Add tenants first.</p>`;
+    return;
+  }
+
+  container.innerHTML = tenants.map(t => {
+    const fin = getTenantMonthFinances(t.id, currentMonth);
+    let cardClass = 'is-pending';
+    let badgeText = '⏳ Unpaid';
+    let badgeClass = 'badge-pending';
+
+    if (fin.status === 'PAID') {
+      cardClass = 'is-paid';
+      badgeText = '✓ Paid in Full';
+      badgeClass = 'badge-paid';
+    } else if (fin.status === 'PARTIAL') {
+      cardClass = 'is-partial';
+      badgeText = `⚠️ Due ₹${fin.due}`;
+      badgeClass = 'badge-partial';
+    } else if (fin.status === 'ADVANCE') {
+      cardClass = 'is-advance';
+      badgeText = `🌟 Advance +₹${fin.advance}`;
+      badgeClass = 'badge-advance';
+    }
+
+    return `
+      <div class="tracker-card ${cardClass}">
+        <div class="tracker-header">
+          <div class="tracker-info">
+            <div class="t-name">${esc(t.name)}</div>
+            <div class="t-room">Room ${esc(t.room)} • ${t.phone ? esc(t.phone) : 'No phone'}</div>
+          </div>
+          <span class="badge ${badgeClass}">${badgeText}</span>
+        </div>
+
+        <div class="tracker-body">
+          <div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">Total Monthly Rent</div>
+            <div class="rent-fig">₹${Number(t.rent).toLocaleString('en-IN')}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:0.75rem; color:var(--text-muted);">Paid This Month</div>
+            <div style="font-size:1.15rem; font-weight:700; color:${fin.totalPaid > 0 ? 'var(--success)' : 'var(--text-muted)'}">
+              ₹${fin.totalPaid.toLocaleString('en-IN')}
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+          ${fin.status === 'PAID' ? `
+            <button class="btn btn-outline btn-sm" style="width:100%;" onclick="openPaymentForTenant(${t.id})">
+              + Add Extra / Advance
+            </button>
+          ` : `
+            <button class="btn btn-success btn-sm" style="width:100%;" onclick="openPaymentForTenant(${t.id})">
+              ₹ Collect Due (₹${fin.due})
+            </button>
+          `}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// --- Tenant Modal ---
+function openTenantModal() {
+  document.getElementById('tenantForm').reset();
+  document.getElementById('tenantId').value = '';
+  document.getElementById('tJoinDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('tenantModalTitle').textContent = 'Add New Tenant';
+  document.getElementById('tenantModal').classList.add('active');
+}
+
+function closeTenantModal() {
+  document.getElementById('tenantModal').classList.remove('active');
+}
+
+function editTenant(id) {
+  const t = tenants.find(x => x.id === id);
+  if (!t) return;
+  document.getElementById('tenantId').value = t.id;
+  document.getElementById('tName').value = t.name;
+  document.getElementById('tPhone').value = t.phone || '';
+  document.getElementById('tRoom').value = t.room;
+  document.getElementById('tRent').value = t.rent;
+  document.getElementById('tJoinDate').value = t.join_date || '';
+  document.getElementById('tenantModalTitle').textContent = 'Edit Tenant Details';
+  document.getElementById('tenantModal').classList.add('active');
+}
+
+async function handleTenantSubmit(e) {
+  e.preventDefault();
+  const id = document.getElementById('tenantId').value;
+  const payload = {
+    name: document.getElementById('tName').value.trim(),
+    phone: document.getElementById('tPhone').value.trim(),
+    room: document.getElementById('tRoom').value.trim(),
+    rent: document.getElementById('tRent').value,
+    join_date: document.getElementById('tJoinDate').value
+  };
+
+  try {
+    if (id) {
+      await apiCall(`resource=tenants&id=${id}`, 'PUT', payload);
+      showToast('Tenant updated successfully!');
+    } else {
+      await apiCall('resource=tenants', 'POST', payload);
+      showToast('Tenant added successfully!');
+    }
+    closeTenantModal();
+    refreshAll();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function deleteTenant(id) {
+  if (!confirm('Are you sure you want to delete this tenant?')) return;
+  try {
+    await apiCall(`resource=tenants&id=${id}`, 'DELETE');
+    showToast('Tenant deleted successfully');
+    refreshAll();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// --- Payment Modal (Smart Partial/Advance Handling) ---
+function populatePaymentTenantDropdown() {
+  const select = document.getElementById('payTenantSelect');
+  const currentVal = select.value;
+  select.innerHTML = '<option value="">-- Choose Tenant --</option>' +
+    tenants.map(t => `<option value="${t.id}" data-rent="${t.rent}" data-room="${t.room}">${esc(t.name)} (Room ${esc(t.room)} - ₹${t.rent})</option>`).join('');
+  if (currentVal) select.value = currentVal;
+}
+
+function openPaymentModal() {
+  document.getElementById('paymentForm').reset();
+  populatePaymentTenantDropdown();
+  document.getElementById('payMonth').value = currentMonth;
+  document.getElementById('payDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('paymentModal').classList.add('active');
+  onPaymentTenantChange();
+}
+
+function openPaymentForTenant(tenantId) {
+  openPaymentModal();
+  const select = document.getElementById('payTenantSelect');
+  select.value = tenantId;
+  onPaymentTenantChange();
+}
+
+function onPaymentTenantChange() {
+  const select = document.getElementById('payTenantSelect');
+  const tenantId = parseInt(select.value);
+  const month = document.getElementById('payMonth').value || currentMonth;
+  const summaryBox = document.getElementById('paySummaryBox');
+  const amountInput = document.getElementById('payAmount');
+  const noteInput = document.getElementById('payNote');
+
+  if (!tenantId) {
+    summaryBox.style.display = 'none';
+    return;
+  }
+
+  const fin = getTenantMonthFinances(tenantId, month);
+  summaryBox.style.display = 'block';
+
+  let summaryHtml = `<strong>Monthly Rent:</strong> ₹${fin.rent.toLocaleString('en-IN')} &bull; `;
+  summaryHtml += `<strong>Already Paid:</strong> <span style="color:var(--success)">₹${fin.totalPaid.toLocaleString('en-IN')}</span> &bull; `;
+
+  if (fin.due > 0) {
+    summaryHtml += `<strong>Remaining Balance:</strong> <span style="color:var(--danger)">₹${fin.due.toLocaleString('en-IN')}</span>`;
+    amountInput.value = fin.due; // Auto pre-fill the exact remaining due!
+    noteInput.value = fin.totalPaid > 0 ? `Installment payment for remaining due` : `Rent payment for ${formatMonthName(month)}`;
+  } else if (fin.advance > 0) {
+    summaryHtml += `<span style="color:var(--purple)">Paid ₹${fin.advance} in Advance!</span>`;
+    amountInput.value = fin.rent;
+    noteInput.value = `Advance payment`;
+  } else {
+    summaryHtml += `<span style="color:var(--success)">✓ Already paid in full</span>`;
+    amountInput.value = fin.rent;
+    noteInput.value = `Rent payment`;
+  }
+
+  summaryBox.innerHTML = summaryHtml;
+}
+
+function closePaymentModal() {
+  document.getElementById('paymentModal').classList.remove('active');
+}
+
+async function handlePaymentSubmit(e) {
+  e.preventDefault();
+  const tenantId = parseInt(document.getElementById('payTenantSelect').value);
+  const month = document.getElementById('payMonth').value;
+  const amount = parseInt(document.getElementById('payAmount').value);
+  const date = document.getElementById('payDate').value;
+  const mode = document.getElementById('payMode').value;
+  const note = document.getElementById('payNote').value.trim();
+
+  if (!tenantId || !amount) {
+    showToast('Please fill all required fields', 'error');
+    return;
+  }
+
+  const payload = {
+    tenant_id: tenantId,
+    month,
+    amount,
+    date,
+    mode,
+    note
+  };
+
+  try {
+    const createdPayment = await apiCall('resource=payments', 'POST', payload);
+    closePaymentModal();
+    showToast('Payment recorded & receipt generated!');
+    await refreshAll();
+    viewReceipt(createdPayment.id);
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function deletePayment(id) {
+  if (!confirm('Are you sure you want to remove this payment record?')) return;
+  try {
+    await apiCall(`resource=payments&id=${id}`, 'DELETE');
+    showToast('Payment record removed');
+    refreshAll();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// --- Printable Receipt Modal ---
+function viewReceipt(paymentId) {
+  const payment = payments.find(p => p.id === paymentId);
+  if (!payment) {
+    showToast('Payment record not found', 'error');
+    return;
+  }
+
+  const rent = payment.rent || (tenants.find(t => t.id === payment.tenant_id)?.rent || payment.amount);
+  const balance = payment.balance !== undefined ? payment.balance : 0;
+  const advance = payment.advance !== undefined ? payment.advance : 0;
+
+  document.getElementById('recNo').textContent = payment.receipt_no || ('RCP-' + payment.id);
+  document.getElementById('recDate').textContent = payment.date;
+  document.getElementById('recTenantName').textContent = payment.tenant_name;
+  document.getElementById('recRoom').textContent = 'Room ' + payment.room;
+  document.getElementById('recPhone').textContent = payment.phone || 'N/A';
+  document.getElementById('recMonth').textContent = formatMonthName(payment.month);
+  document.getElementById('recRentFig').textContent = '₹' + Number(rent).toLocaleString('en-IN');
+  document.getElementById('recMode').textContent = payment.mode || 'UPI';
+  document.getElementById('recNote').textContent = payment.note || '-';
+  document.getElementById('recAmount').textContent = '₹' + Number(payment.amount).toLocaleString('en-IN');
+  document.getElementById('recAmountWords').textContent = numberToWordsINR(payment.amount);
+
+  // Dynamic Balance / Status Callout on Receipt
+  const balBox = document.getElementById('recBalanceBox');
+  const watermark = document.getElementById('recWatermark');
+
+  if (balance > 0) {
+    balBox.className = 'balance-callout due';
+    balBox.innerHTML = `⚠️ <strong>Partial Payment Note:</strong> ₹${payment.amount.toLocaleString('en-IN')} received. Remaining balance of <strong>₹${balance.toLocaleString('en-IN')}</strong> is still pending for ${formatMonthName(payment.month)}.`;
+    watermark.textContent = 'PARTIAL';
+    watermark.style.color = 'rgba(245, 158, 11, 0.12)';
+  } else if (advance > 0) {
+    balBox.className = 'balance-callout advance';
+    balBox.innerHTML = `🌟 <strong>Advance Payment:</strong> Rent fully cleared with an extra advance of <strong>₹${advance.toLocaleString('en-IN')}</strong> credited to next billing period.`;
+    watermark.textContent = 'ADVANCE';
+    watermark.style.color = 'rgba(139, 92, 246, 0.12)';
+  } else {
+    balBox.className = 'balance-callout cleared';
+    balBox.innerHTML = `✅ <strong>Payment Cleared:</strong> Rent for ${formatMonthName(payment.month)} has been settled in full. Balance Due: ₹0.`;
+    watermark.textContent = 'PAID';
+    watermark.style.color = 'rgba(16, 185, 129, 0.12)';
+  }
+
+  document.getElementById('receiptModal').classList.add('active');
+}
+
+function closeReceiptModal() {
+  document.getElementById('receiptModal').classList.remove('active');
+}
+
+function printReceipt() {
+  window.print();
+}
+
+function downloadTextSlip() {
+  const recNo = document.getElementById('recNo').textContent;
+  const date = document.getElementById('recDate').textContent;
+  const tenant = document.getElementById('recTenantName').textContent;
+  const room = document.getElementById('recRoom').textContent;
+  const phone = document.getElementById('recPhone').textContent;
+  const month = document.getElementById('recMonth').textContent;
+  const rent = document.getElementById('recRentFig').textContent;
+  const mode = document.getElementById('recMode').textContent;
+  const amt = document.getElementById('recAmount').textContent;
+  const words = document.getElementById('recAmountWords').textContent;
+  const note = document.getElementById('recNote').textContent;
+
+  const content = `================================================
+           SHREE PG & RESIDENCY
+       Official Rent Payment Receipt
+================================================
+Receipt No   : ${recNo}
+Issue Date   : ${date}
+Billing For  : ${month}
+
+Tenant Name  : ${tenant}
+Room Number  : ${room}
+Phone Number : ${phone}
+Monthly Rent : ${rent}
+Payment Mode : ${mode}
+Remarks/Note : ${note}
+
+------------------------------------------------
+AMOUNT PAID  : ${amt}
+IN WORDS     : ${words}
+------------------------------------------------
+Status       : Verified & Recorded
+Management   : Shree PG & Residency
+================================================`;
+
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Receipt_${recNo}_${tenant.replace(/\s+/g, '_')}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast('Receipt slip downloaded successfully!');
+}
+
+// --- Initialization ---
+document.addEventListener('DOMContentLoaded', () => {
+  setCurrentMonth();
+  refreshAll();
+});
+</script>
+</body>
+</html>
