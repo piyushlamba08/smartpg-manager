@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: smartpg-manager
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /index.html
+    autoDeploy: true
+    envVars:
+      - key: DATA_DIR
+        value: /data
+    disk:
+      name: smartpg-data
+      mountPath: /data
+      sizeGB: 1
